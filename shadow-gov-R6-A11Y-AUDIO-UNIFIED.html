@@ -5634,6 +5634,12 @@ window.onload = function() {
   const EXP_STORAGE_KEY = 'shadowGovExpansions';
   const EXP_FILES_CACHE = 'shadowGovExpFiles'; // for manual file picker persistence
 
+  function readSavedExpansions(){
+    try{ return JSON.parse(localStorage.getItem(EXP_STORAGE_KEY) || '[]'); }
+    catch(e){ return []; }
+  }
+  window.readSavedExpansions = readSavedExpansions;
+
   // Utility: prettify from filename
   function prettyName(filename){
     const base = filename.replace(/\.json$/i, '');
@@ -5662,7 +5668,7 @@ window.onload = function() {
       const subtitle = container && container.querySelector('.start-subtitle');
       if(subtitle){
         let chipRow = container.querySelector('#active-expansions-row');
-        const saved = JSON.parse(localStorage.getItem(EXP_STORAGE_KEY) || '[]');
+        const saved = readSavedExpansions();
         if(saved.length){
           if(!chipRow){
             chipRow = document.createElement('div');
@@ -5757,7 +5763,7 @@ window.onload = function() {
   window.showExpansionManager = function(){
     const root = document.getElementById('root');
     const list = (availableExpansions||[]).map((exp,i)=>{
-      const checked = (JSON.parse(localStorage.getItem(EXP_STORAGE_KEY)||'[]')).includes(exp.name);
+      const checked = readSavedExpansions().includes(exp.name);
       return `
         <div class="expansion-item ${checked?'selected':''}" onclick="document.getElementById('exp-check-${i}').click()">
           <input id="exp-check-${i}" type="checkbox" class="expansion-checkbox" ${checked?'checked':''}
@@ -5837,7 +5843,7 @@ window.onload = function() {
   // ---- Auto-load enabled expansions at boot ----
   const _origOnload = window.onload;
   window.onload = function(){
-    const saved = JSON.parse(localStorage.getItem(EXP_STORAGE_KEY) || '[]');
+    const saved = readSavedExpansions();
     window.settings = window.settings || {}; 
     window.settings.expansionsEnabled = saved;
     (async ()=>{
@@ -5969,7 +5975,7 @@ window.onload = function() {
   window.showExpansionManager = function(){
     const root=document.getElementById('root');
     const list=(window.availableExpansions||[]).map((exp,i)=>{
-      const enabled=(JSON.parse(localStorage.getItem(EXP_STORAGE_KEY)||'[]')).includes(exp.name);
+      const enabled = readSavedExpansions().includes(exp.name);
       return `<div class="expansion-item ${enabled?'selected':''}" onclick="document.getElementById('exp-check-${i}').click()">
         <input id="exp-check-${i}" type="checkbox" ${enabled?'checked':''}
                onchange="(function(cb){const it=cb.closest('.expansion-item'); cb.checked?it.classList.add('selected'):it.classList.remove('selected');})(this)">
