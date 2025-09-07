@@ -5,7 +5,8 @@
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
 <title>Shadow Government - ULTIMATE HUMOR Edition</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+<script>
 /* === R4-FIX PACK: Options Enhancements (H2P + Expansions) === */
 (function(){
   // helper: read saved flags
@@ -154,133 +155,6 @@ document.addEventListener('DOMContentLoaded', function(){
 
 </script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/topojson/3.0.2/topojson.min.js"></script>
-<!-- R4-FIXED2 bootstrap -->
-<script>
-// ===== Options Enhancements (H2P + Expansions) =====
-(function(){
-  function getSavedFlags(){ try{ return JSON.parse(localStorage.getItem('sg_selected_packs')||'{}'); }catch(e){ return {}; } }
-  function setSavedFlags(flags){ try{ localStorage.setItem('sg_selected_packs', JSON.stringify(flags||{})); }catch(e){} }
-  function collectPacks(){
-    const packs=[]; const add=p=>{ if(p&&p.name&&!packs.find(x=>x.name===p.name)) packs.push(p); };
-    if(Array.isArray(window.availableExpansions)) window.availableExpansions.forEach(add);
-    if(Array.isArray(window.EXPANSION_REGISTRY)) window.EXPANSION_REGISTRY.forEach(add);
-    if(Array.isArray(window.expansions)) window.expansions.forEach(add);
-    ['govOpsJson','oppJson','floridaManJson','coldWarJson','probingTimeJson'].forEach(id=>{
-      const el=document.getElementById(id); if(!el) return; try{ add(JSON.parse(el.textContent||'{}')); }catch(e){}
-    });
-    return packs;
-  }
-  window.buildOptionsMenu = function(){
-    const menu=document.getElementById('optionsMenu'); if(!menu) return;
-    const packs=collectPacks(); const flags=getSavedFlags();
-    let expHolder=menu.querySelector('#optExpansionsList');
-    if(!expHolder){
-      const wrap=document.createElement('div'); wrap.className='option-item';
-      wrap.innerHTML='<span class="option-label">Expansions</span><div id="optExpansionsList"></div>';
-      menu.appendChild(wrap); expHolder=wrap.querySelector('#optExpansionsList');
-    }
-    if(!packs.length){
-      expHolder.innerHTML='<div class="no-expansions">No expansions found</div>';
-    }else{
-      expHolder.innerHTML=packs.map(p=>{
-        const count=(Array.isArray(p.cards)?p.cards.length:(p.cardCount||0));
-        const ic=p.icon||'🃏'; const checked=flags[p.name]!==false;
-        return `<label class="expansion-item" style="display:block;cursor:pointer;">
-          <input type="checkbox" class="expansion-checkbox" data-pack="${p.name}" ${checked?'checked':''}>
-          <span class="expansion-name">${ic} ${p.name}</span>
-          <div class="expansion-description">${count} cards</div>
-        </label>`;
-      }).join('');
-      expHolder.onchange=(e)=>{
-        const t=e.target; if(!t || !t.matches('.expansion-checkbox')) return;
-        const name=t.getAttribute('data-pack'); flags[name]=!!t.checked; setSavedFlags(flags);
-        if(typeof window.setExpansionEnabled==='function') window.setExpansionEnabled(name, !!t.checked);
-      };
-    }
-    if(!menu.querySelector('#optHowToPlayBtn')){
-      const div=document.createElement('div'); div.className='option-item'; div.style.textAlign='center';
-      div.innerHTML='<button id="optHowToPlayBtn" class="expansion-button" type="button">How to Play</button>';
-      menu.appendChild(div);
-      div.querySelector('#optHowToPlayBtn').addEventListener('click', function(){
-        if(typeof window.openH2PModal==='function') window.openH2PModal();
-        else{
-          const btn=document.querySelector('.start-button.h2p-btn,#btnHowToPlay,[data-action="how-to-play"]');
-          if(btn) btn.click();
-        }
-      });
-    }
-  };
-  const prevToggle=window.toggleOptions;
-  window.toggleOptions=function(){
-    const menu=document.getElementById('optionsMenu');
-    if(menu) window.buildOptionsMenu();
-    if(typeof prevToggle==='function') return prevToggle.apply(this, arguments);
-    if(menu) menu.classList.toggle('active');
-  };
-})();
-
-// ===== AI panel helper & class init =====
-window.setAIPanelVisible=function(v){
-  const p=document.getElementById('aiPanel');
-  if(p){ p.style.display=v?'block':'none'; document.body.classList.toggle('ai-visible', !!v); }
-};
-(function(){
-  const p=document.getElementById('aiPanel'); const vis=p && p.style.display!=='none';
-  document.body.classList.toggle('ai-visible', !!vis);
-})();
-
-// ===== Rename Opposition Operative -> Truth Seekers immediately =====
-(function(){
-  const walk=document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, null);
-  const nodes=[]; while(walk.nextNode()){ const n=walk.currentNode; if(n.nodeValue && n.nodeValue.includes('OPPOSITION OPERATIVE')) nodes.append(n); }
-  nodes.forEach(n=>{ n.nodeValue = n.nodeValue.replaceAll('OPPOSITION OPERATIVE','TRUTH SEEKERS'); });
-})();
-
-// ===== Secret Agenda PERFECT CONTROL normalization =====
-(function(){
-  try{
-    if(Array.isArray(CONFIG?.secretAgendas)){
-      const i=CONFIG.secretAgendas.findIndex(a=>/PERFECT CONTROL/i.test(a.name));
-      if(i>=0){
-        const goal=(CONFIG?.victory?.states)||10;
-        CONFIG.secretAgendas[i].checkStateCount=goal;
-        CONFIG.secretAgendas[i].requirement=`Control ${goal} states`;
-      }
-    }
-  }catch(e){}
-})();
-
-// ===== H2P modal: ensure markup + functions exist and wire start button directly =====
-(function(){
-  if(!document.getElementById('h2pBackdrop')){
-    const tpl=`<div class="h2p-backdrop" id="h2pBackdrop" aria-hidden="true">
-      <div class="h2p-modal" role="dialog" aria-modal="true" aria-labelledby="h2pTitle">
-        <h2 id="h2pTitle">HOW TO PLAY</h2>
-        <div class="subtitle">Shadow Government — quick rules</div>
-        <div class="h2p-grid">
-          <div><strong>Goal</strong><br/>Meet any victory condition (states, IP, Truth, Secret Agenda).
-          <div class="h2p-hr"></div><strong>Turn Flow</strong><br/>Income → Draw/Play → Effects → Event → End.
-          <div class="h2p-hr"></div><strong>Resources</strong><br/>IP (budget), Truth (public belief), Pressure.</div>
-          <div><strong>States</strong><br/>Add pressure to capture; defense tier sets threshold.
-          <div class="h2p-hr"></div><strong>Factions</strong><br/>Government vs Truth Seekers.</div>
-        </div>
-        <button class="h2p-close" id="h2pCloseBtn">CLOSE</button>
-      </div></div>`;
-    document.body.insertAdjacentHTML('beforeend', tpl);
-  }
-  window.openH2PModal=function(){ const bd=document.getElementById('h2pBackdrop'); if(bd){ bd.classList.add('h2p-active'); bd.setAttribute('aria-hidden','false'); } };
-  window.closeH2PModal=function(){ const bd=document.getElementById('h2pBackdrop'); if(bd){ bd.classList.remove('h2p-active'); bd.setAttribute('aria-hidden','true'); } };
-  document.addEventListener('click', function(e){
-    const bd=document.getElementById('h2pBackdrop');
-    if(e.target && e.target.id==='h2pCloseBtn') window.closeH2PModal();
-    if(e.target && e.target===bd) window.closeH2PModal();
-    // Start screen H2P button (ensures immediate open, not deferred)
-    if(e.target && (e.target.matches('.start-button.h2p-btn') || e.target.id==='btnHowToPlay' || e.target.dataset.action==='how-to-play')){
-      e.preventDefault(); window.openH2PModal(); return false;
-    }
-  }, { passive:false });
-})();
-</script>
 <style>
         @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Anton&family=Oswald:wght@700&family=Roboto+Condensed:wght@400,700&family=Courier+Prime:wght@400;700&family=Playfair+Display:wght@900&display=swap');
         
@@ -2526,7 +2400,6 @@ body.ai-visible .right-panel { margin-right: 270px; }
         // Function to load expansion pack
         function loadExpansionPack(packName, packData) {
             EXPANSION_PACKS[packName] = packData;
-            console.log(`Loaded expansion pack: ${packName}`);
         }
         
         // Check for available expansion packs
@@ -2547,7 +2420,6 @@ body.ai-visible .right-panel { margin-right: 270px; }
                         });
                     }
                 } catch (error) {
-                    console.log(`No expansion found: ${file}`);
                 }
             }
         }
@@ -4584,7 +4456,6 @@ body.ai-visible .right-panel { margin-right: 270px; }
                     statistics: gameState.statistics
                 }));
             } catch (error) {
-                console.log('Could not save stats:', error);
             }
             
             renderGame();
@@ -4757,7 +4628,6 @@ body.ai-visible .right-panel { margin-right: 270px; }
                 const saved = localStorage.getItem('shadowGovStats');
                 if (saved) stats = JSON.parse(saved);
             } catch (error) {
-                console.log('Could not load stats:', error);
             }
             
             gameState.totalWins = stats.wins || 0;
@@ -4846,7 +4716,13 @@ body.ai-visible .right-panel { margin-right: 270px; }
         function saveExpansionSettings() {
             settings.expansionsEnabled = [];
             for (let i = 0; i < availableExpansions.length; i++) {
-                const checkbox = document.getElementById(`exp-check-${i}
+                const checkbox = document.getElementById(`exp-check-${i}`);
+                if (checkbox && checkbox.checked) {
+                    settings.expansionsEnabled.push(availableExpansions[i].name);
+                }
+            }
+            applyExpansionSettings();
+        }
 
 // Toggle expansion in options menu
 function toggleExpansionInOptions(expName, checked) {
@@ -4862,7 +4738,7 @@ function applyExpansionSettings() {
     try {
         localStorage.setItem('shadowGovExpansions', JSON.stringify(settings.expansionsEnabled));
     } catch (error) {
-        console.log('Could not persist expansion settings:', error);
+        // ignore persistence errors
     }
     // Load the selected expansions
     if (Array.isArray(settings.expansionsEnabled)) {
@@ -5230,7 +5106,6 @@ window.onload = function() {
             settings.expansionsEnabled = JSON.parse(savedExpansions);
         }
     } catch (error) {
-        console.log('Could not load expansion settings:', error);
     }
     
     checkForExpansions().then(() => {
@@ -5240,7 +5115,6 @@ window.onload = function() {
                 const exp = availableExpansions.find(e => e.name === expName);
                 if (exp && exp.data) {
                     loadExpansionPack(expName, exp.data);
-                    console.log('Auto-loaded expansion: ' + expName);
                 }
             });
         }
@@ -5677,7 +5551,6 @@ window.onload = function() {
       const files = hrefs.map(h => h.startsWith('http') ? h : (dirUrl.replace(/\/+$/,'') + '/' + h.replace(/^\//,'')));
       return files;
     }catch(e){
-      console.log('Directory scan failed:', e);
       return [];
     }
   }
@@ -6330,12 +6203,7 @@ window.onload = function() {
 (function(){
   if (window.__SG_UNIFIED_PATCH__) return; window.__SG_UNIFIED_PATCH__ = true;
 
-  window.toggleOptions = window.toggleOptions || function(){
-    var m = document.getElementById('optionsMenu');
-    if (!m) return;
-    if (!m.__built){ buildOptionsMenu(); m.__built = true; }
-    m.classList.toggle('active');
-  };
+  // window.toggleOptions defined earlier
   function buildOptionsMenu(){
     var m = document.getElementById('optionsMenu'); if(!m) return;
     m.innerHTML = "";
@@ -6550,15 +6418,6 @@ window.onload = function() {
 })(); 
 </script>
 <script>
-if(typeof window.toggleOptions!=='function'){
-  window.toggleOptions=function(){
-    var m=document.getElementById('optionsMenu'); if(!m) return;
-    if(!m.classList.contains('active')){ if(typeof window.buildOptionsMenu==='function') window.buildOptionsMenu(); }
-    m.classList.toggle('active');
-  };
-}
-</script>
-<script>
         (function(){
           if(window.ShadowAudio){ return; }
           const state = {
@@ -6568,7 +6427,7 @@ if(typeof window.toggleOptions!=='function'){
             audio: new Audio(),
           };
           const menuEl = document.getElementById('optionsMenu');
-          function log(...a){ try{ console.log('[Audio]', ...a); }catch(e){} }
+          function log(...a){ }
           function srcFor(cat, idx){ return `muzak/${cat}-${idx}.mp3`; }
           function play(category){
             state.category = category || state.category || 'Theme';
@@ -6844,7 +6703,6 @@ if(typeof window.toggleOptions!=='function'){
   };
   window.OptionsUI = OptionsUI;
   // Provide global compat helpers
-  window.toggleOptions = ()=> OptionsUI.toggle();
   window.updateOptionsMenu = ()=> OptionsUI.render();
 
   // Rewire any existing "OPTIONS" buttons to use OptionsUI
@@ -6940,7 +6798,6 @@ if(typeof window.toggleOptions!=='function'){
     }
   });
   window.OptionsUI = OptionsUI;
-  window.toggleOptions = OptionsUI.toggle.bind(OptionsUI);
   // Wire any visible start-screen OPTIONS button to toggle
   function wireStartOptions(){
     document.querySelectorAll('.start-screen .start-content button').forEach(function(b){
@@ -7298,12 +7155,6 @@ if(typeof window.toggleOptions!=='function'){
   bindA11yAndAudioAdv();
   bindGear();
 })();
-</script>
-
-
-<script>
-window.toggleOptions = function(){ if (window.openOptionsModalUnified) openOptionsModalUnified(); };
-window.toggleOptionsMenu = function(){ if (window.openOptionsModalUnified) openOptionsModalUnified(); };
 </script>
 
 </body>
